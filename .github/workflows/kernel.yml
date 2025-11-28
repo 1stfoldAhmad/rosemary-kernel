@@ -30,8 +30,6 @@ jobs:
     # ---------------------------------------
     - name: 🔄 Checkout Repository
       uses: actions/checkout@v4
-      with:
-        submodules: true
 
     # ---------------------------------------
     # 2. Clone LineageOS Kernel (fetch latest upstream)
