@@ -98,7 +98,7 @@ jobs:
         export LLVM=1
         export LLVM_IAS=1
 
-        make rosemary_defconfig
+        make O=out rosemary_defconfig
         make O=out -j$(nproc)
         cd ..
 
