@@ -72,18 +72,13 @@ jobs:
         rm toolchain/clang.tar.gz
 
     # ---------------------------------------
-    # 6. Clone & Apply Official KernelSU Next Patch (fetch latest updates)
+    # 6. Apply Official KernelSU Next Patch (using official setup script)
     # ---------------------------------------
-    - name: 🚀 Clone & Apply KernelSU Next Patch
+    - name: 🚀 Apply KernelSU Next Patch
       if: ${{ github.event.inputs.ksu == 'true' }}
       run: |
-        if [ ! -d "KernelSU" ]; then
-          git clone -b next https://git.kernel.org/pub/scm/linux/kernel/git/ksu/KernelSU.git
-        fi
-        cd KernelSU
-        git fetch origin
-        git reset --hard origin/next
-        ./apply.sh ../kernel
+        cd kernel
+        curl -LSs "https://raw.githubusercontent.com/KernelSU-Next/KernelSU-Next/next/kernel/setup.sh" | bash -
         cd ..
 
     # ---------------------------------------
