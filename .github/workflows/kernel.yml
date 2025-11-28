@@ -50,7 +50,7 @@ jobs:
     # 3. Setup CCACHE
     # ---------------------------------------
     - name: ⚡ Set up ccache
-      uses: hendrikmuhs/ccache-action@v2.2.0
+      uses: hendrikmuhs/ccache-action@v1.2
       with:
         key: rosemary-kernel-${{ github.sha }}
 
