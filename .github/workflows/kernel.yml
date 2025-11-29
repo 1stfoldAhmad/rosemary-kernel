@@ -3,11 +3,6 @@ name: Rosemary Kernel Build
 on:
   # Manual trigger
   workflow_dispatch:
-    inputs:
-      ksu:
-        description: "Apply KernelSU Next patch?"
-        required: false
-        default: "true"
 
   # Scheduled build every 15 days at 03:00 UTC
   schedule:
@@ -72,17 +67,7 @@ jobs:
         rm toolchain/clang.tar.gz
 
     # ---------------------------------------
-    # 6. Apply Official KernelSU Next Patch (using official setup script)
-    # ---------------------------------------
-    - name: 🚀 Apply KernelSU Next Patch
-      if: ${{ github.event.inputs.ksu == 'true' }}
-      run: |
-        cd kernel
-        curl -LSs "https://raw.githubusercontent.com/KernelSU-Next/KernelSU-Next/next/kernel/setup.sh" | bash -
-        cd ..
-
-    # ---------------------------------------
-    # 7. Build the Kernel
+    # 6. Build the Kernel
     # ---------------------------------------
     - name: 🏗️ Build Kernel
       run: |
@@ -103,7 +88,7 @@ jobs:
         cd ..
 
     # ---------------------------------------
-    # 8. Package Kernel into Flashable ZIP (AnyKernel3)
+    # 7. Package Kernel into Flashable ZIP (AnyKernel3)
     # ---------------------------------------
     - name: 📦 Package Kernel ZIP
       run: |
@@ -119,7 +104,7 @@ jobs:
         
         ## AnyKernel setup
         properties() { '
-        kernel.string=Rosemary Kernel with KernelSU Next
+        kernel.string=Rosemary Kernel - LineageOS with Charging Fixes
         do.devicecheck=1
         do.modules=0
         do.systemless=1
@@ -156,7 +141,7 @@ jobs:
         mv rosemary-kernel.zip AnyKernel3/
 
     # ---------------------------------------
-    # 9. Upload Artifact
+    # 8. Upload Artifact
     # ---------------------------------------
     - name: ⬆️ Upload Kernel ZIP
       uses: actions/upload-artifact@v4
