@@ -3,6 +3,11 @@ name: Rosemary Kernel Build
 on:
   # Manual trigger
   workflow_dispatch:
+    inputs:
+      ksu:
+        description: "Apply KernelSU Next patch?"
+        required: false
+        default: "true"
 
   # Scheduled build every 15 days at 03:00 UTC
   schedule:
@@ -67,7 +72,17 @@ jobs:
         rm toolchain/clang.tar.gz
 
     # ---------------------------------------
-    # 6. Build the Kernel
+    # 6. Apply Official KernelSU Next Patch (using official setup script)
+    # ---------------------------------------
+    - name: 🚀 Apply KernelSU Next Patch
+      if: ${{ github.event.inputs.ksu == 'true' }}
+      run: |
+        cd kernel
+        curl -LSs "https://raw.githubusercontent.com/KernelSU-Next/KernelSU-Next/next/kernel/setup.sh" | bash -
+        cd ..
+
+    # ---------------------------------------
+    # 7. Build the Kernel
     # ---------------------------------------
     - name: 🏗️ Build Kernel
       run: |
@@ -88,23 +103,30 @@ jobs:
         cd ..
 
     # ---------------------------------------
-    # 7. Package Kernel into Flashable ZIP (AnyKernel3)
+    # 8. Package Kernel into Flashable ZIP (AnyKernel3)
     # ---------------------------------------
     - name: 📦 Package Kernel ZIP
       run: |
-        if [ ! -d "AnyKernel3" ]; then
-          git clone https://github.com/osm0sis/AnyKernel3.git
-        fi
+        # Clone AnyKernel3
+        git clone --depth=1 https://github.com/osm0sis/AnyKernel3.git
         cd AnyKernel3
         
-        # Configure for Rosemary
+        # Remove example files
+        rm -f Image.gz-dtb dtbo.img zImage* Image* *.img
+        
+        # Copy kernel image
+        cp ../kernel/out/arch/arm64/boot/Image.gz-dtb .
+        cp ../kernel/out/arch/arm64/boot/dtbo.img . || true
+        
+        # Configure AnyKernel3
         cat > anykernel.sh << 'EOF'
         # AnyKernel3 Ramdisk Mod Script
         # osm0sis @ xda-developers
         
         ## AnyKernel setup
+        # begin properties
         properties() { '
-        kernel.string=Rosemary Kernel - LineageOS with Charging Fixes
+        kernel.string=Rosemary Kernel by 1stfoldAhmad @ GitHub
         do.devicecheck=1
         do.modules=0
         do.systemless=1
@@ -112,36 +134,42 @@ jobs:
         do.cleanuponabort=0
         device.name1=rosemary
         device.name2=secret
-        supported.versions=
+        device.name3=
+        device.name4=
+        device.name5=
+        supported.versions=14-15
         supported.patchlevels=
-        '; }
+        '; } # end properties
+        
+        # shell variables
+        block=/dev/block/by-name/boot;
+        is_slot_device=0;
+        ramdisk_compression=auto;
+        patch_vbmeta_flag=auto;
         
         ## AnyKernel methods (DO NOT CHANGE)
         # import patching functions/variables - see for reference
-        . tools/ak3-core.sh
+        . tools/ak3-core.sh;
         
-        ## AnyKernel boot install
-        dump_boot
+        ## AnyKernel install
+        dump_boot;
         
         # begin ramdisk changes
+        
         # end ramdisk changes
         
-        write_boot
-        ## end boot install
+        write_boot;
+        ## end install
+        
         EOF
         
-        # Copy kernel files
-        rm -f Image.gz* dtbo.img *.zip
-        cp ../kernel/out/arch/arm64/boot/Image.gz-dtb .
-        cp ../kernel/out/arch/arm64/boot/dtbo.img . || true
-        
-        # Create properly structured ZIP
-        zip -r9 ../rosemary-kernel.zip * -x .git .gitignore .gitattributes README.md
+        # Create flashable ZIP
+        zip -r9 ../rosemary-kernel.zip * -x .git README.md *placeholder
         cd ..
         mv rosemary-kernel.zip AnyKernel3/
 
     # ---------------------------------------
-    # 8. Upload Artifact
+    # 9. Upload Artifact
     # ---------------------------------------
     - name: ⬆️ Upload Kernel ZIP
       uses: actions/upload-artifact@v4
