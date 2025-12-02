@@ -67,7 +67,27 @@ jobs:
         rm toolchain/clang.tar.gz
 
     # ---------------------------------------
-    # 6. Build the Kernel
+    # 6. Integrate KernelSU (non-GKI, kprobe)
+    # ---------------------------------------
+    - name: 🔐 Integrate KernelSU (v0.9.5 with kprobe)
+      run: |
+        cd kernel
+        curl -LSs "https://raw.githubusercontent.com/tiann/KernelSU/main/kernel/setup.sh" | bash -s v0.9.5
+
+        DEFCONFIG=arch/arm64/configs/rosemary_defconfig
+        ensure_config() {
+          if ! grep -q "^$1" "$DEFCONFIG"; then
+            echo "$1" >> "$DEFCONFIG"
+          fi
+        }
+
+        ensure_config "CONFIG_KPROBES=y"
+        ensure_config "CONFIG_HAVE_KPROBES=y"
+        ensure_config "CONFIG_KPROBE_EVENTS=y"
+        ensure_config "CONFIG_KSU=y"
+
+    # ---------------------------------------
+    # 7. Build the Kernel
     # ---------------------------------------
     - name: 🏗️ Build Kernel
       run: |
@@ -111,7 +131,7 @@ jobs:
         ## AnyKernel setup
         # begin properties
         properties() { '
-        kernel.string=Rosemary Kernel - LineageOS with Charging Fixes
+        kernel.string=Rosemary Kernel + KernelSU (Charging Fixes)
         do.devicecheck=1
         do.modules=0
         do.systemless=1
