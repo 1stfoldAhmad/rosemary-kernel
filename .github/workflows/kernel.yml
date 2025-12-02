@@ -67,12 +67,12 @@ jobs:
         rm toolchain/clang.tar.gz
 
     # ---------------------------------------
-    # 6. Integrate KernelSU (non-GKI, kprobe)
+    # 6. Integrate KernelSU Next (kprobe)
     # ---------------------------------------
-    - name: 🔐 Integrate KernelSU (v0.9.5 with kprobe)
+    - name: 🔐 Integrate KernelSU Next
       run: |
         cd kernel
-        curl -LSs "https://raw.githubusercontent.com/tiann/KernelSU/main/kernel/setup.sh" | bash -s v0.9.5
+        curl -LSs "https://raw.githubusercontent.com/KernelSU-Next/KernelSU-Next/next/kernel/setup.sh" | bash -
 
         DEFCONFIG=arch/arm64/configs/rosemary_defconfig
         ensure_config() {
@@ -131,7 +131,7 @@ jobs:
         ## AnyKernel setup
         # begin properties
         properties() { '
-        kernel.string=Rosemary Kernel + KernelSU (Charging Fixes)
+        kernel.string=Rosemary Kernel + KernelSU Next
         do.devicecheck=1
         do.modules=0
         do.systemless=1
