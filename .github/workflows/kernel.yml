@@ -31,13 +31,21 @@ jobs:
     # ---------------------------------------
     - name: 🌳 Clone & Update LineageOS Kernel
       run: |
-        if [ ! -d "kernel" ]; then
-          git clone -b lineage-23.0 https://github.com/LineageOS/android_kernel_xiaomi_mt6785 kernel
+        REPO_URL=https://github.com/LineageOS/android_kernel_xiaomi_mt6785
+        BRANCH=lineage-23.0
+
+        if [ ! -d "kernel/.git" ]; then
+          rm -rf kernel
+          git clone --depth=1 -b $BRANCH $REPO_URL kernel
+        else
+          cd kernel
+          git remote set-url origin $REPO_URL
+          git fetch --depth=1 origin $BRANCH
+          git checkout $BRANCH || git checkout -b $BRANCH origin/$BRANCH
+          git reset --hard origin/$BRANCH
+          git clean -fdx
+          cd ..
         fi
-        cd kernel
-        git fetch origin
-        git reset --hard origin/lineage-23.0
-        cd ..
 
     # ---------------------------------------
     # 3. Setup CCACHE
@@ -172,6 +180,13 @@ jobs:
         zip -r9 ../rosemary-kernel.zip * -x .git README.md *placeholder
         cd ..
         mv rosemary-kernel.zip AnyKernel3/
+
+    # ---------------------------------------
+    # 9. Remove KernelSU sources to shrink artifact
+    # ---------------------------------------
+    - name: 🧹 Clean KernelSU Sources
+      run: |
+        rm -rf kernel/KernelSU kernel/.git/modules/KernelSU || true
 
     # ---------------------------------------
     # 9. Upload Artifact
