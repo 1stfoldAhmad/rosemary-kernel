@@ -31,21 +31,18 @@ jobs:
     # ---------------------------------------
     - name: 🌳 Clone & Update LineageOS Kernel
       run: |
+        set -euo pipefail
         REPO_URL=https://github.com/LineageOS/android_kernel_xiaomi_mt6785
         BRANCH=lineage-23.0
 
-        if [ ! -d "kernel/.git" ]; then
-          rm -rf kernel
-          git clone --depth=1 -b $BRANCH $REPO_URL kernel
-        else
-          cd kernel
-          git remote set-url origin $REPO_URL
-          git fetch --depth=1 origin $BRANCH
-          git checkout $BRANCH || git checkout -b $BRANCH origin/$BRANCH
-          git reset --hard origin/$BRANCH
-          git clean -fdx
-          cd ..
-        fi
+        rm -rf kernel
+        git init kernel
+        cd kernel
+        git remote add origin $REPO_URL
+        git fetch --depth=1 origin $BRANCH
+        git checkout -b $BRANCH FETCH_HEAD
+        git clean -fdx
+        cd ..
 
     # ---------------------------------------
     # 3. Setup CCACHE
