@@ -146,7 +146,7 @@ jobs:
         device.name3=
         device.name4=
         device.name5=
-        supported.versions=14-16
+        supported.versions=15-16
         supported.patchlevels=
         '; } # end properties
         
