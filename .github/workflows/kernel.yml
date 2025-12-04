@@ -109,6 +109,11 @@ jobs:
 
         make O=out rosemary_defconfig
         make O=out -j$(nproc)
+
+        # Build additional partitions required for flashing
+        make O=out vendor_bootimage
+        make O=out dtbo.img
+        make O=out vbmeta.img
         cd ..
 
     # ---------------------------------------
@@ -121,11 +126,13 @@ jobs:
         cd AnyKernel3
         
         # Remove example files
-        rm -f Image.gz-dtb dtbo.img zImage* Image* *.img
+        rm -f Image.gz-dtb dtbo.img vendor_boot.img vbmeta.img zImage* Image* *.img
         
         # Copy kernel image
         cp ../kernel/out/arch/arm64/boot/Image.gz-dtb .
-        cp ../kernel/out/arch/arm64/boot/dtbo.img . || true
+        cp ../kernel/out/arch/arm64/boot/dtbo.img dtbo.img
+        cp ../kernel/out/arch/arm64/boot/vendor_boot.img vendor_boot.img
+        cp ../kernel/out/arch/arm64/boot/vbmeta.img vbmeta.img
         
         # Configure AnyKernel3
         cat > anykernel.sh << 'EOF'
@@ -151,7 +158,30 @@ jobs:
         '; } # end properties
         
         # shell variables
-        block=/dev/block/by-name/boot;
+        # Dynamic slot detection for boot partition
+        slot=$(getprop ro.boot.slot_suffix)
+        if [ -z "$slot" ]; then
+          slot=$(getprop ro.boot.slot)
+          [ -n "$slot" ] && slot="_$slot"
+        fi
+
+        boot_block=/dev/block/by-name/boot$slot
+        vendor_boot_block=/dev/block/by-name/vendor_boot$slot
+        if [ ! -e "$vendor_boot_block" ]; then
+          vendor_boot_block=/dev/block/by-name/vendor_boot
+        fi
+
+        dtbo_block=/dev/block/by-name/dtbo$slot
+        if [ ! -e "$dtbo_block" ]; then
+          dtbo_block=/dev/block/by-name/dtbo
+        fi
+
+        vbmeta_block=/dev/block/by-name/vbmeta$slot
+        if [ ! -e "$vbmeta_block" ]; then
+          vbmeta_block=/dev/block/by-name/vbmeta
+        fi
+
+        block=$boot_block
         is_slot_device=1;
         ramdisk_compression=auto;
         patch_vbmeta_flag=auto;
@@ -168,6 +198,24 @@ jobs:
         # end ramdisk changes
         
         write_boot;
+
+        # Flash vendor_boot if present
+        if [ -f vendor_boot.img ] && [ -e "$vendor_boot_block" ]; then
+          ui_print "- Flashing vendor_boot$slot"
+          dd if=vendor_boot.img of=$vendor_boot_block 2>/dev/null || abort "Failed to flash vendor_boot$slot"
+        fi
+
+        # Flash dtbo if present
+        if [ -f dtbo.img ] && [ -e "$dtbo_block" ]; then
+          ui_print "- Flashing dtbo partition"
+          dd if=dtbo.img of=$dtbo_block 2>/dev/null || abort "Failed to flash dtbo"
+        fi
+
+        # Flash vbmeta if present
+        if [ -f vbmeta.img ] && [ -e "$vbmeta_block" ]; then
+          ui_print "- Flashing vbmeta partition"
+          dd if=vbmeta.img of=$vbmeta_block 2>/dev/null || abort "Failed to flash vbmeta"
+        fi
         ## end install
         
         EOF
